@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- Every write of products' stock in sources the inventory's services make. A high sort order keeps each plugin
+         next to the write itself: what the other plugins do after it (the legacy stock copy, indexing) runs outside
+         it, so a change is recorded once the write is done whatever they do. -->
+    <type name="Magento\InventoryApi\Api\SourceItemsSaveInterface">
+        <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryApi\RecordSourceItemsSave" sortOrder="1000"/>
+    </type>
+    <type name="Magento\InventoryApi\Api\SourceItemsDeleteInterface">
+        <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryApi\RecordSourceItemsDelete" sortOrder="1000"/>
+    </type>
+    <type name="Magento\InventoryCatalogApi\Api\BulkSourceAssignInterface">
+        <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryCatalogApi\RecordBulkSourceAssign" sortOrder="1000"/>
+    </type>
+    <type name="Magento\InventoryCatalogApi\Api\BulkSourceUnassignInterface">
+        <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryCatalogApi\RecordBulkSourceUnassign" sortOrder="1000"/>
+    </type>
+    <type name="Magento\InventoryCatalogApi\Api\BulkInventoryTransferInterface">
+        <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryCatalogApi\RecordBulkInventoryTransfer" sortOrder="1000"/>
+    </type>
+    <type name="Magento\InventoryCatalogApi\Api\BulkPartialInventoryTransferInterface">
+        <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryCatalogApi\RecordBulkPartialInventoryTransfer" sortOrder="1000"/>
+    </type>
+
+    <!-- The plugins run on every stock write; what recording needs is built on the first write worth recording -->
+    <type name="Hryvinskyi\AdminActionLogInventory\Model\SourceStockTracker">
+        <arguments>
+            <argument name="state" xsi:type="object">Hryvinskyi\AdminActionLogInventory\Model\SourceItemState\Proxy</argument>
+            <argument name="changes" xsi:type="object">Hryvinskyi\AdminActionLogInventory\Model\SourceStockChanges\Proxy</argument>
+        </arguments>
+    </type>
+    <type name="Hryvinskyi\AdminActionLogInventory\Model\SourceStockChanges">
+        <arguments>
+            <argument name="recorder" xsi:type="object">Hryvinskyi\AdminActionLog\Api\EntityChangeRecorderInterface\Proxy</argument>
+        </arguments>
+    </type>
+
+    <!-- The stock item of a product that keeps its stock in sources only copies the default source's quantity and
+         status, which the source item already records: the stock item part leaves them out -->
+    <virtualType name="Hryvinskyi\AdminActionLogInventory\Model\ProductStockItemPart" type="Hryvinskyi\AdminActionLogInventory\Model\StockItemPart">
+        <arguments>
+            <argument name="part" xsi:type="object">Hryvinskyi\AdminActionLog\Model\EntityChange\ProductStockItemPart</argument>
+            <argument name="sourceFields" xsi:type="array">
+                <item name="qty" xsi:type="string">qty</item>
+                <item name="is_in_stock" xsi:type="string">is_in_stock</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Hryvinskyi\AdminActionLog\Model\EntityChange\TrackedEntityPool">
+        <arguments>
+            <argument name="parts" xsi:type="array">
+                <item name="product_stock_item" xsi:type="object" sortOrder="10">Hryvinskyi\AdminActionLogInventory\Model\ProductStockItemPart</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- The product fields a source's stock is recorded under, shown and found as the admin's forms name them -->
+    <virtualType name="Hryvinskyi\AdminActionLog\Model\Search\Field\ProductStaticFields" type="Hryvinskyi\AdminActionLog\Model\Search\Field\StaticFields">
+        <arguments>
+            <argument name="fields" xsi:type="array">
+                <item name="quantity" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Quantity</item>
+                    <item name="names" xsi:type="object">Hryvinskyi\AdminActionLog\Model\Search\Field\Value\Quantities</item>
+                </item>
+                <item name="source_status" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Stock Status</item>
+                    <item name="names" xsi:type="object">Hryvinskyi\AdminActionLog\Model\Search\Field\Value\StockStatusNames</item>
+                </item>
+            </argument>
+        </arguments>
+    </virtualType>
+</config>
