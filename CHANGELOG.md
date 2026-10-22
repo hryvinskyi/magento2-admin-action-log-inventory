@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- The quantities a shipment deducts from sources are recorded as changes of the product, for whoever ships.
+- A stock update "Update Attributes" queues is recorded for the admin who asked for it, not for the consumer process.
+  Who asked is kept beside the queue (table `hryvinskyi_admin_action_log_inventory_queued`) until the consumer takes
+  it; a row nobody takes is removed after a week.
+
+### Changed
+- Requires `hryvinskyi/magento2-activity-log` ^1.2, `magento/module-inventory` and `magento/module-inventory-catalog`.
+
 ## [1.0.0] - 2026-10-22
 
 ### Added

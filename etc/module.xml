@@ -12,9 +12,12 @@
         <sequence>
             <module name="Magento_Catalog"/>
             <module name="Magento_CatalogInventory"/>
+            <module name="Magento_Inventory"/>
             <module name="Magento_InventoryApi"/>
+            <module name="Magento_InventoryCatalog"/>
             <module name="Magento_InventoryCatalogApi"/>
             <module name="Magento_InventoryConfigurationApi"/>
+            <module name="Hryvinskyi_ActivityLog"/>
             <module name="Hryvinskyi_AdminActionLog"/>
         </sequence>
     </module>

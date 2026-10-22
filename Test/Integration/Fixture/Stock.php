@@ -31,7 +31,13 @@ use PHPUnit\Framework\Assert;
  * journal holds for them
  *
  * @phpstan-import-type ChangeDetail from EntityChangeStore
- * @phpstan-type RecordedChange array{id: int, action: string, subject: string, detail: ChangeDetail}
+ * @phpstan-type RecordedChange array{
+ *     id: int,
+ *     action: string,
+ *     subject: string,
+ *     actor: string,
+ *     detail: ChangeDetail
+ * }
  */
 class Stock
 {
@@ -169,12 +175,14 @@ class Stock
             Assert::assertIsNumeric($row['entity_id'] ?? null);
             Assert::assertIsString($row['action'] ?? null);
             Assert::assertIsString($row['subject_label'] ?? null);
+            Assert::assertIsString($row['actor_name'] ?? null);
             $detail = self::service(EntityChangeStore::class)->find((int) $row['entity_id']);
             Assert::assertNotNull($detail, 'A change without its field detail.');
             $changes[] = [
                 'id' => (int) $row['entity_id'],
                 'action' => $row['action'],
                 'subject' => $row['subject_label'],
+                'actor' => $row['actor_name'],
                 'detail' => $detail,
             ];
         }

@@ -48,12 +48,19 @@ rest of the write is still recorded.
 
 ## Who made the change
 A write made while the admin waits (the product form, its Sources section, a source item saved through REST) is
-recorded with the admin or integration that made it. A bulk or queued write runs later in a message queue consumer:
-the Update Attributes quantity and status, and the mass actions Assign Inventory Source, Unassign Inventory Source
-and Transfer Inventory To Source when they run in the queue. Its actor is `cli`, the consumer's process, not the admin
-who started it, and nothing is recorded when `cli` is not among the actors chosen in **Record Changes Made By**. The
-consumer processes the message without the admin's session, and the Admin Action Log credits a change to whoever runs
-the code that makes it; the admin's own request to start the bulk action is recorded as an admin request.
+recorded with the admin or integration that made it. A bulk or queued write runs later in a message queue consumer,
+and is still recorded for the account that asked for it:
+- The mass actions Assign Inventory Source, Unassign Inventory Source and Transfer Inventory To Source, when they run
+  in the queue, are bulk actions: Magento keeps the admin with the bulk, and the Activity Log carries each operation
+  out for that admin.
+- The Update Attributes quantity and status are queued as a message that names only the products and the stock data.
+  This module keeps who asked for it beside the queue (table `hryvinskyi_admin_action_log_inventory_queued`, under a
+  hash of the message) when the message is published, and the consumer takes it back when it receives the same
+  message. Two equal updates queued by different admins are carried out for them in the order they were queued; a
+  row nobody takes (a message the queue lost) is removed after a week.
+
+The admin's own request to start the action is recorded as an admin request too. **Record Changes Made By** applies
+to the account the change is recorded for.
 
 ## No change is recorded twice
 The Admin Action Log also records the product's classic stock item. For a product that keeps its stock in sources
@@ -68,13 +75,19 @@ The Admin Action Log marks a change a form save did not ask for as set automatic
 source are not attributes of the product, and the product form sends them under other names (per source, or as the
 classic stock quantity), so a quantity typed into the form is always recorded as asked for, never marked.
 
+## A shipment's deduction
+The quantity a shipment deducts from a source is written with one query, past the source item save. This module reads
+the source items before and after that query and records the difference as a change of the product, for whoever
+ships (the admin creating the shipment, an integration through the web API, a process).
+
 ## Not recorded
-- The quantity an order's shipment deducts from a source: the inventory writes it with plain SQL. Orders reserve
-  stock rather than change it, and the reservations are not recorded either.
+- Reservations: an order reserves stock rather than change it, so placing, cancelling or refunding an order changes
+  the salable quantity, not a source's quantity.
 - Stock changed with plain SQL by any other code.
 
 ## Requirements
 - Magento 2.4 with Inventory (MSI) and PHP 8.1 or later
+- [`hryvinskyi/magento2-activity-log`](https://github.com/hryvinskyi/magento2-activity-log) ^1.2
 - [`hryvinskyi/magento2-admin-action-log`](https://github.com/hryvinskyi/magento2-admin-action-log) ^1.1
 
 ## Installation
@@ -93,7 +106,8 @@ Action Log** apply.
   them. The Activity Log search page shows them all.
 - Each changed product in each source is one change: a bulk assignment of many products writes as many changes, though
   the products are named from one read.
-- A bulk or queued write is credited to `cli`, not to the admin who started it (see *Who made the change*).
+- An Update Attributes stock update queued before this version was installed has no requester kept, so it is
+  recorded for the consumer's process.
 
 ## License
 MIT. See [LICENSE](LICENSE).

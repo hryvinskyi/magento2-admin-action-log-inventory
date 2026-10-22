@@ -29,6 +29,18 @@
     <type name="Magento\InventoryCatalogApi\Api\BulkPartialInventoryTransferInterface">
         <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryCatalogApi\RecordBulkPartialInventoryTransfer" sortOrder="1000"/>
     </type>
+    <!-- A shipment deducts shipped quantities from sources with one query, past the source item save -->
+    <type name="Magento\Inventory\Model\SourceItem\Command\DecrementSourceItemQty">
+        <plugin name="hryvinskyi_admin_action_log_inventory_record" type="Hryvinskyi\AdminActionLogInventory\Plugin\Inventory\RecordSourceDeduction" sortOrder="1000"/>
+    </type>
+
+    <!-- "Update Attributes" queues the stock part of its update: the consumer carries it out for whoever asked -->
+    <type name="Magento\Framework\MessageQueue\PublisherInterface">
+        <plugin name="hryvinskyi_admin_action_log_inventory_requester" type="Hryvinskyi\AdminActionLogInventory\Plugin\MessageQueue\RememberStockUpdateRequester"/>
+    </type>
+    <type name="Magento\InventoryCatalog\Model\UpdateInventory">
+        <plugin name="hryvinskyi_admin_action_log_inventory_requester" type="Hryvinskyi\AdminActionLogInventory\Plugin\InventoryCatalog\ActAsStockUpdateRequester"/>
+    </type>
 
     <!-- The plugins run on every stock write; what recording needs is built on the first write worth recording -->
     <type name="Hryvinskyi\AdminActionLogInventory\Model\SourceStockTracker">

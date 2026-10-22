@@ -1,0 +1,19 @@
+{
+    "hryvinskyi_admin_action_log_inventory_queued": {
+        "column": {
+            "entity_id": true,
+            "message_key": true,
+            "actor_type": true,
+            "actor_id": true,
+            "actor_name": true,
+            "created_at": true
+        },
+        "index": {
+            "HRYVINSKYI_ADMIN_ACTION_LOG_INVENTORY_QUEUED_MESSAGE_KEY": true,
+            "HRYVINSKYI_ADMIN_ACTION_LOG_INVENTORY_QUEUED_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}

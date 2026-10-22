@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="hryvinskyi_admin_action_log_inventory_queued" resource="default" engine="innodb"
+           comment="Who asked for each queued stock update, until a consumer carries it out">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Row ID"/>
+        <column xsi:type="varchar" name="message_key" nullable="false" length="64" comment="Hash of the update's products and data"/>
+        <column xsi:type="varchar" name="actor_type" nullable="false" length="32" comment="Actor type"/>
+        <column xsi:type="varchar" name="actor_id" nullable="true" length="64" comment="Actor ID"/>
+        <column xsi:type="varchar" name="actor_name" nullable="false" length="255" comment="Actor name"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Queued at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <index referenceId="HRYVINSKYI_ADMIN_ACTION_LOG_INVENTORY_QUEUED_MESSAGE_KEY" indexType="btree">
+            <column name="message_key"/>
+        </index>
+        <index referenceId="HRYVINSKYI_ADMIN_ACTION_LOG_INVENTORY_QUEUED_CREATED_AT" indexType="btree">
+            <column name="created_at"/>
+        </index>
+    </table>
+</schema>

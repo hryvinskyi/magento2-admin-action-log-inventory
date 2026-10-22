@@ -12,11 +12,15 @@
     ],
     "require": {
         "php": "^8.1",
+        "hryvinskyi/magento2-activity-log": "^1.2",
         "hryvinskyi/magento2-admin-action-log": "^1.1",
         "magento/framework": "*",
+        "magento/framework-message-queue": "*",
         "magento/module-catalog": "*",
         "magento/module-catalog-inventory": "*",
+        "magento/module-inventory": "*",
         "magento/module-inventory-api": "*",
+        "magento/module-inventory-catalog": "*",
         "magento/module-inventory-catalog-api": "*",
         "magento/module-inventory-configuration-api": "*"
     },

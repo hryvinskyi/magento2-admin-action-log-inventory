@@ -13,6 +13,16 @@ use Hryvinskyi\AdminActionLog\Model\EntityChange\ChangeOperation;
 use Hryvinskyi\AdminActionLog\Model\Search\Field\FieldDisplays;
 use Hryvinskyi\AdminActionLog\Model\Search\Field\FieldLabelSourceInterface;
 use Hryvinskyi\AdminActionLogInventory\Test\Integration\Fixture\Stock;
+use Hryvinskyi\ActivityLog\Api\ActorScopeInterface;
+use Hryvinskyi\ActivityLog\Api\Data\ActorInterfaceFactory;
+use Hryvinskyi\ActivityLog\Api\Data\ActorType;
+use Hryvinskyi\AdminActionLogInventory\Model\QueuedUpdateActors;
+use Hryvinskyi\AdminActionLogInventory\Plugin\MessageQueue\RememberStockUpdateRequester;
+use Magento\Framework\MessageQueue\PublisherInterface;
+use Magento\Inventory\Model\SourceItem\Command\DecrementSourceItemQty;
+use Magento\InventoryApi\Api\GetSourceItemsBySkuInterface;
+use Magento\InventoryCatalog\Model\UpdateInventory;
+use Magento\InventoryCatalog\Model\UpdateInventory\InventoryDataFactory;
 use Magento\InventoryCatalogApi\Api\BulkSourceAssignInterface;
 use Magento\InventoryCatalogApi\Api\BulkSourceUnassignInterface;
 use Magento\TestFramework\Fixture\DbIsolation;
@@ -134,6 +144,63 @@ class SourceStockChangeTest extends TestCase
         self::assertSame(
             ['before' => '0.0000', 'after' => null, 'scope' => 'Aal Back Room'],
             $this->stock->fields($changes[1])['quantity']
+        );
+    }
+
+    public function testAShipmentsDeductionIsAChangeOfTheProductInTheSource(): void
+    {
+        $sourceItems = Stock::service(GetSourceItemsBySkuInterface::class)->execute(self::SKU);
+        $sourceItem = array_values($sourceItems)[0] ?? null;
+        self::assertNotNull($sourceItem);
+
+        Stock::service(DecrementSourceItemQty::class)->execute([
+            ['source_item' => $sourceItem, 'qty_to_decrement' => 2],
+        ]);
+
+        $changes = $this->stock->changesOf($this->productId, $this->since);
+        self::assertCount(1, $changes);
+        self::assertSame(
+            ['quantity' => ['before' => '100.0000', 'after' => '98.0000', 'scope' => 'Default Source']],
+            $this->stock->fields($changes[0])
+        );
+    }
+
+    public function testAQueuedStockUpdateIsRecordedForTheAdminWhoAskedForIt(): void
+    {
+        $update = Stock::service(InventoryDataFactory::class)->create([
+            'skus' => [self::SKU],
+            'data' => '{"qty":"40","is_in_stock":"1"}',
+        ]);
+        $admin = Stock::service(ActorInterfaceFactory::class)->create([
+            'type' => ActorType::Admin,
+            'name' => 'jane',
+            'id' => '7',
+        ]);
+        $publisher = $this->createStub(PublisherInterface::class);
+        Stock::service(ActorScopeInterface::class)->actAs(
+            $admin,
+            static function () use ($update, $publisher): void {
+                Stock::service(RememberStockUpdateRequester::class)->beforePublish(
+                    $publisher,
+                    'inventory.mass.update',
+                    $update
+                );
+            }
+        );
+
+        Stock::service(UpdateInventory::class)->execute($update);
+        Stock::service(UpdateInventory::class)->execute($update);
+
+        $changes = $this->stock->changesOf($this->productId, $this->since);
+        self::assertCount(1, $changes, 'The second run stores what is already stored');
+        self::assertSame('jane', $changes[0]['actor'], 'Recorded for the admin, not for the consumer process');
+        self::assertSame(
+            ['before' => '100.0000', 'after' => '40.0000', 'scope' => 'Default Source'],
+            $this->stock->fields($changes[0])['quantity']
+        );
+        self::assertNull(
+            Stock::service(QueuedUpdateActors::class)->take($update),
+            'Who asked is taken once, by the update it was kept for'
         );
     }
 
