@@ -2,7 +2,7 @@
     "name": "hryvinskyi/magento2-admin-action-log-inventory",
     "description": "Records per-source stock (quantity and status of each source item) as product changes in the admin action log",
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "license": "MIT",
     "authors": [
         {
